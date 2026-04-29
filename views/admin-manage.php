@@ -4,7 +4,6 @@ $manage_items = [['icon' => 'L', 'item' => 'Laptop Charger', 'category' => 'Elec
 ];
 ?>
 <div class="flex bg-bglight min-h-screen">
-    <!-- Admin Sidebar -->
     <aside class="w-64 bg-citred h-screen fixed left-0 top-0 text-white flex flex-col shadow-xl z-40">
         <div class="p-6 flex flex-col items-center border-b border-red-500/30 mb-4">
             <div class="w-12 h-12 bg-white p-1 rounded-full shadow-lg mb-2 flex items-center justify-center">
@@ -13,9 +12,9 @@ $manage_items = [['icon' => 'L', 'item' => 'Laptop Charger', 'category' => 'Elec
             <h2 class="text-center text-xs font-bold tracking-wider leading-tight">CIT UNIVERSITY<br>LOST & FOUND</h2>
         </div>
         <nav class="flex-1 px-4 space-y-2">
-            <!-- Inactive State -->
+
             <a href="?page=admin" class="flex items-center gap-3 px-4 py-2.5 rounded text-sm font-medium text-red-100 hover:bg-white/10 transition"><i class="fa-solid fa-border-all w-5"></i> Dashboard</a>
-            <!-- Active State -->
+
             <a href="?page=admin-manage" class="flex items-center gap-3 px-4 py-2.5 rounded text-sm font-semibold bg-white/20 shadow-sm text-white transition"><i class="fa-solid fa-box-open w-5"></i> Manage Items</a>
         </nav>
         <div class="p-4 border-t border-red-500/30 flex items-center gap-3 mt-auto bg-citred">
@@ -45,7 +44,6 @@ $manage_items = [['icon' => 'L', 'item' => 'Laptop Charger', 'category' => 'Elec
                 <p class="text-sm text-gray-500">System overview and statistics</p>
             </div>
 
-            <!-- BIGGER Manage Items Table -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
                 <div class="mb-6">
                     <h3 class="font-bold text-gray-900 text-lg">Recent Reports</h3>
@@ -64,7 +62,7 @@ $manage_items = [['icon' => 'L', 'item' => 'Laptop Charger', 'category' => 'Elec
                         <tbody class="text-sm">
                             <?php foreach($manage_items as $item): ?>
                             <tr class="border-b border-gray-50 hover:bg-gray-50 transition">
-                                <!-- Col 1: Item Details with Avatar -->
+
                                 <td class="py-5 px-4">
                                     <div class="flex items-center gap-4">
                                         <div class="w-12 h-12 bg-green-400 text-white font-bold rounded-lg flex items-center justify-center text-xl shadow-sm">
@@ -77,24 +75,23 @@ $manage_items = [['icon' => 'L', 'item' => 'Laptop Charger', 'category' => 'Elec
                                     </div>
                                 </td>
                                 
-                                <!-- Col 2: Reporter Details -->
+
                                 <td class="py-5 px-4">
                                     <p class="font-bold text-gray-900 text-sm"><?= $item['name'] ?></p>
                                     <p class="text-[10px] text-gray-400 mt-0.5 tracking-wide"><?= $item['id_num'] ?></p>
                                 </td>
                                 
-                                <!-- Col 3: Location Details -->
+
                                 <td class="py-5 px-4">
                                     <p class="font-bold text-gray-900 text-sm"><?= $item['location'] ?></p>
                                     <p class="text-[10px] text-gray-400 mt-0.5"><?= $item['datetime'] ?></p>
                                 </td>
                                 
-                                <!-- Col 4: Status Pill -->
+
                                 <td class="py-5 px-4 w-32">
                                     <span class="text-[10px] font-bold px-3 py-1.5 rounded <?= $item['status_color'] ?>"><?= $item['status'] ?></span>
                                 </td>
 
-                                <!-- Col 5: Actions (X and Check) -->
                                 <td class="py-5 px-4 text-right">
                                     <div class="flex items-center justify-end gap-6">
                                         <button class="text-red-500 hover:text-red-700 transition" title="Reject">

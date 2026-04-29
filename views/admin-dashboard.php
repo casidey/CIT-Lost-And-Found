@@ -4,7 +4,6 @@ $reports = [['item' => 'LAPTOP CHARGER', 'rep_by' => 'Casidey Kizteen', 'type' =
 ];
 ?>
 <div class="flex bg-bglight min-h-screen">
-    <!-- Admin Sidebar -->
     <aside class="w-64 bg-citred h-screen fixed left-0 top-0 text-white flex flex-col shadow-xl z-40">
         <div class="p-6 flex flex-col items-center border-b border-red-500/30 mb-4">
             <div class="w-12 h-12 bg-white p-1 rounded-full shadow-lg mb-2 flex items-center justify-center">
@@ -13,9 +12,8 @@ $reports = [['item' => 'LAPTOP CHARGER', 'rep_by' => 'Casidey Kizteen', 'type' =
             <h2 class="text-center text-xs font-bold tracking-wider leading-tight">CIT UNIVERSITY<br>LOST & FOUND</h2>
         </div>
         <nav class="flex-1 px-4 space-y-2">
-            <!-- Active State -->
             <a href="?page=admin" class="flex items-center gap-3 px-4 py-2.5 rounded text-sm font-semibold bg-white/20 shadow-sm text-white transition"><i class="fa-solid fa-border-all w-5"></i> Dashboard</a>
-            <!-- Inactive State -->
+        
             <a href="?page=admin-manage" class="flex items-center gap-3 px-4 py-2.5 rounded text-sm font-medium text-red-100 hover:bg-white/10 transition"><i class="fa-solid fa-box-open w-5"></i> Manage Items</a>
         </nav>
         <div class="p-4 border-t border-red-500/30 flex items-center gap-3 mt-auto bg-citred">
@@ -45,7 +43,7 @@ $reports = [['item' => 'LAPTOP CHARGER', 'rep_by' => 'Casidey Kizteen', 'type' =
                 <p class="text-sm text-gray-500">System overview and statistics</p>
             </div>
 
-            <!-- BIGGER Stats Cards -->
+        
             <div class="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
                 <div class="bg-white py-8 px-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-5 transition hover:shadow-md">
                     <div class="w-14 h-14 rounded-full border-2 border-red-100 text-red-400 flex items-center justify-center text-2xl"><i class="fa-solid fa-circle-exclamation"></i></div>
@@ -77,7 +75,6 @@ $reports = [['item' => 'LAPTOP CHARGER', 'rep_by' => 'Casidey Kizteen', 'type' =
                 </div>
             </div>
 
-            <!-- BIGGER Recent Reports Table -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="font-bold text-gray-900 text-lg">Recent Reports</h3>

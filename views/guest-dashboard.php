@@ -1,7 +1,7 @@
 <?php require 'includes/header.php'; ?>
 
 <div class="flex bg-bglight min-h-screen">
-    <!-- Guest Sidebar -->
+
     <aside class="w-64 bg-citred h-screen fixed left-0 top-0 text-white flex flex-col shadow-xl z-40">
         <div class="p-6 flex flex-col items-center border-b border-red-500/30 mb-4">
             <div class="w-12 h-12 bg-white p-1 rounded-full shadow-lg mb-2 flex items-center justify-center">
@@ -35,7 +35,7 @@
         </header>
 
         <main class="p-8 max-w-5xl w-full mx-auto overflow-y-auto">
-            <!-- Info Alert -->
+
             <div class="bg-[#EEF2F6] border border-[#E2E8F0] text-[#334155] p-4 rounded-xl flex gap-3 items-start mb-6">
                 <i class="fa-solid fa-circle-exclamation text-[#64748B] mt-0.5 text-lg"></i>
                 <div>
@@ -45,7 +45,7 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Browse Card -->
+
                 <div class="bg-white p-10 rounded-xl shadow-sm border border-gray-100 text-center flex flex-col items-center justify-center transition hover:shadow-md">
                     <div class="w-16 h-16 bg-green-50 text-green-600 rounded-full flex items-center justify-center text-3xl mb-5 border border-green-100"><i class="fa-solid fa-magnifying-glass"></i></div>
                     <h3 class="font-bold text-lg mb-2 text-gray-800">Browse Found Items</h3>
@@ -53,7 +53,7 @@
                     <a href="?page=browse" class="bg-[#7A0000] hover:bg-red-900 text-white text-xs font-bold py-3 px-8 rounded-lg shadow transition">View Found Items &rarr;</a>
                 </div>
 
-                <!-- Stats Card -->
+
                 <div class="bg-white p-10 rounded-xl shadow-sm border border-gray-100 flex flex-col transition hover:shadow-md">
                     <h3 class="font-bold text-lg mb-8 text-center text-gray-800">System Statistics</h3>
                     <div class="flex justify-around items-center flex-1">
