@@ -204,7 +204,7 @@
             <!-- Brand Column -->
             <div class="col-span-1 md:col-span-2">
                 <div class="flex items-center gap-4 mb-6">
-                    <img src="cit-logo.png" alt="CIT Logo" class="w-14 h-14 object-contain bg-white rounded-full p-1 border-2 border-white">
+                    <img src="images/cit-logo.png" alt="CIT Logo" class="w-14 h-14 object-contain bg-white rounded-full p-1 border-2 border-white">
                     <div class="flex flex-col">
                         <span class="font-extrabold text-[16px] leading-tight tracking-wide">CIT UNIVERSITY</span>
                         <span class="font-medium text-[14px] text-white/90">LOST & FOUND</span>

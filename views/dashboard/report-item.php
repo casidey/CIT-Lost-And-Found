@@ -1,13 +1,35 @@
 <?php 
 $active_page = 'report'; 
-require 'includes/header.php'; 
+// require 'includes/header.php'; // Commented out for testing standalone
 ?>
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Item</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        citred: '#DC2626', 
+                        citdarkred: '#B91C1C', // Added for the button hover effect
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body>
 <div class="flex bg-[#F8FAFC] min-h-screen">
     
     <aside class="w-64 bg-citred fixed h-full flex flex-col z-20 shadow-xl">
         <div class="p-6 flex items-center gap-3 border-b border-white/10">
-            <img src="images/cit-logo.png" class="w-10 h-10 object-contain bg-white rounded-full p-0.5 shadow-sm">
+            <img src="images/cit-logo.png" class="w-10 h-10 object-contain bg-white rounded-full p-0.5 shadow-sm" alt="Logo">
             <div class="text-white leading-tight">
                 <p class="font-black text-[12px] tracking-wider uppercase">CIT University</p>
                 <p class="font-bold text-[12px] opacity-90">LOST & FOUND</p>
@@ -19,7 +41,7 @@ require 'includes/header.php';
                 <i class="fa-solid fa-table-cells-large w-5 text-center"></i>
                 Dashboard
             </a>
-            <a href="?page=report" class="flex items-center gap-4 px-4 py-3.5 rounded-lg font-bold text-[15px] transition-all <?= ($active_page == 'report') ? 'bg-white/20 text-white' : 'text-white/70 hover:bg-white/10 hover:text-white' ?>">
+            <a href="?page=report" class="flex items-center gap-4 px-4 py-3.5 rounded-lg font-bold text-[15px] transition-all <?= ($active_page == 'report') ? 'bg-white/20 text-white shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white' ?>">
                 <i class="fa-solid fa-circle-plus w-5 text-center"></i>
                 Report Item
             </a>
@@ -34,7 +56,7 @@ require 'includes/header.php';
                 <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white font-bold border border-white/10">Q</div>
                 <div class="text-white">
                     <p class="text-[13px] font-bold">Casidey Quibuyen</p>
-                    <p class="text-[11px] opacity-60">Student Account</p>
+                    <p class="text-[11px] opacity-60">Student</p>
                 </div>
             </div>
         </div>
@@ -43,7 +65,7 @@ require 'includes/header.php';
     <div class="flex-1 ml-64 flex flex-col h-screen">
         
         <header class="bg-white shadow-sm h-16 flex justify-between items-center px-8 border-b border-gray-100 shrink-0 z-10">
-            <h1 class="text-xl font-bold text-gray-800">Student Dashboard</h1>
+            <h1 class="text-xl font-bold text-gray-800">Report Item</h1>
             
             <div class="flex items-center gap-5">
                 <div class="flex items-center gap-3">
@@ -60,13 +82,14 @@ require 'includes/header.php';
             </div>
         </header>
 
-        <main class="p-8 max-w-6xl w-full mx-auto overflow-y-auto">
+        <!-- Changed width to max-w-screen-2xl to perfectly match the Dashboard and Browse items wide layout -->
+        <main class="p-8 w-full max-w-screen-2xl mx-auto overflow-y-auto flex-1 flex flex-col">
             <div class="mb-8">
                 <h2 class="text-2xl font-bold text-gray-900 mb-1">Report an Item</h2>
                 <p class="text-[15px] text-gray-500">Submit details about a lost or found item.</p>
             </div>
 
-            <div class="bg-white p-10 rounded-2xl shadow-sm border border-gray-100">
+            <div class="bg-white p-10 rounded-2xl shadow-sm border border-gray-100 flex-1">
                 <form class="space-y-6" action="#" method="POST" enctype="multipart/form-data">
                     <input type="hidden" name="report_type" id="report_type" value="lost">
 
@@ -86,14 +109,14 @@ require 'includes/header.php';
                             <label class="block text-[12px] font-bold text-gray-600 uppercase mb-2 tracking-wider">Item Name</label>
                             <div class="relative">
                                 <i class="fa-solid fa-t absolute left-4 top-3.5 text-gray-400 text-sm"></i>
-                                <input type="text" placeholder="e.g., Blue AquaFlask" class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-[15px] focus:outline-none focus:ring-2 focus:ring-citred/20 focus:border-citred transition-all">
+                                <input type="text" placeholder="e.g., Blue AquaFlask" class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-[15px] font-medium focus:outline-none focus:ring-2 focus:ring-citred/20 focus:border-citred transition-all">
                             </div>
                         </div>
                         <div>
                             <label class="block text-[12px] font-bold text-gray-600 uppercase mb-2 tracking-wider">Category</label>
                             <div class="relative">
                                 <i class="fa-solid fa-tag absolute left-4 top-3.5 text-gray-400 text-sm"></i>
-                                <select class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-[15px] focus:outline-none focus:border-citred text-gray-600 appearance-none bg-white">
+                                <select class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-[15px] font-medium focus:outline-none focus:ring-2 focus:ring-citred/20 focus:border-citred text-gray-600 appearance-none bg-white transition-all">
                                     <option>Electronics</option>
                                     <option>Personal Items</option>
                                 </select>
@@ -103,14 +126,14 @@ require 'includes/header.php';
                             <label class="block text-[12px] font-bold text-gray-600 uppercase mb-2 tracking-wider">Date</label>
                             <div class="relative">
                                 <i class="fa-regular fa-calendar absolute left-4 top-3.5 text-gray-400 text-sm"></i>
-                                <input type="date" class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-[15px] focus:outline-none focus:border-citred text-gray-600">
+                                <input type="date" class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-[15px] font-medium focus:outline-none focus:ring-2 focus:ring-citred/20 focus:border-citred text-gray-600 transition-all">
                             </div>
                         </div>
                         <div>
                             <label class="block text-[12px] font-bold text-gray-600 uppercase mb-2 tracking-wider">Time</label>
                             <div class="relative">
                                 <i class="fa-regular fa-clock absolute left-4 top-3.5 text-gray-400 text-sm"></i>
-                                <input type="time" class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-[15px] focus:outline-none focus:border-citred text-gray-600">
+                                <input type="time" class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-[15px] font-medium focus:outline-none focus:ring-2 focus:ring-citred/20 focus:border-citred text-gray-600 transition-all">
                             </div>
                         </div>
                     </div>
@@ -119,7 +142,7 @@ require 'includes/header.php';
                         <label class="block text-[12px] font-bold text-gray-600 uppercase mb-2 tracking-wider">Location</label>
                         <div class="relative">
                             <i class="fa-solid fa-location-dot absolute left-4 top-3.5 text-gray-400 text-sm"></i>
-                            <input type="text" placeholder="e.g., Library 2nd Floor" class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-[15px] focus:outline-none focus:border-citred">
+                            <input type="text" placeholder="e.g., Library 2nd Floor" class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-[15px] font-medium focus:outline-none focus:ring-2 focus:ring-citred/20 focus:border-citred transition-all">
                         </div>
                     </div>
 
@@ -127,13 +150,13 @@ require 'includes/header.php';
                         <label class="block text-[12px] font-bold text-gray-600 uppercase mb-2 tracking-wider">Description</label>
                         <div class="relative">
                             <i class="fa-regular fa-file-lines absolute left-4 top-4 text-gray-400 text-sm"></i>
-                            <textarea rows="3" placeholder="Provide detailed description (color, brand and more)..." class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-[15px] focus:outline-none focus:border-citred"></textarea>
+                            <textarea rows="3" placeholder="Provide detailed description (color, brand and more)..." class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-[15px] font-medium focus:outline-none focus:ring-2 focus:ring-citred/20 focus:border-citred transition-all"></textarea>
                         </div>
                     </div>
 
                     <div>
                         <label class="block text-[12px] font-bold text-gray-600 uppercase mb-2 tracking-wider">Contact Info (Optional)</label>
-                        <input type="text" placeholder="Phone number or alternative email" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-[15px] focus:outline-none focus:border-citred">
+                        <input type="text" placeholder="Phone number or alternative email" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-[15px] font-medium focus:outline-none focus:ring-2 focus:ring-citred/20 focus:border-citred transition-all">
                     </div>
 
                     <div id="proof-section" class="hidden mt-8 border-t border-gray-100 pt-6">
@@ -146,11 +169,11 @@ require 'includes/header.php';
                         <div class="bg-blue-50/40 p-6 rounded-xl border border-blue-100 grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1.5">Verification Question</label>
-                                <input type="text" placeholder="e.g., What color is the wallet" class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-citred bg-white">
+                                <input type="text" placeholder="e.g., What color is the wallet" class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium outline-none focus:border-citred bg-white transition-all">
                             </div>
                             <div>
                                 <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1.5">Secret Answer</label>
-                                <input type="text" placeholder="e.g., Yellow" class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-citred bg-white">
+                                <input type="text" placeholder="e.g., Yellow" class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium outline-none focus:border-citred bg-white transition-all">
                             </div>
                         </div>
                     </div>
