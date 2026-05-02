@@ -1,38 +1,63 @@
 <?php
-// /lost-and-found/index.php
-session_start();
 
-// Simple Router
-$page = isset($_GET['page']) ? $_GET['page'] : 'landing';
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
-// Define base URL for assets
-define('BASE_URL', '/lost-and-found');
+$page = $_GET['page'] ?? 'landing';
 
+// Pages that require login
+$protected_pages = ['dashboard', 'report', 'browse', 'admin-dashboard', 'admin-manage'];
+
+if (in_array($page, $protected_pages) && !isset($_SESSION['user_id'])) {
+    header("Location: index.php?page=login");
+    exit();
+}
+
+// Logout handler
+if ($page === 'logout') {
+    session_destroy();
+    header("Location: index.php?page=login");
+    exit();
+}
+
+// Route to the correct file
 switch ($page) {
-    case 'login':
-        require 'auth/login.php';
-        break;
-    case 'dashboard':
-        require 'views/dashboard/index.php';
-        break;
-    case 'report':
-        require 'views/dashboard/report-item.php';
-        break;
-    case 'browse':
-        require 'views/dashboard/browse.php';
-        break;
-    case 'admin':
-        require 'views/admin-dashboard.php';
-        break;
-    case 'admin-manage':
-        require 'views/admin-manage.php';
-        break;
-    case 'guest':
-        require 'views/guest-dashboard.php';
-        break;
+
     case 'landing':
+        include __DIR__ . '/views/landing.php';
+        break;
+
+    case 'login':
+        include __DIR__ . '/auth/login.php';
+        break;
+
+    case 'dashboard':
+        include __DIR__ . '/views/dashboard/dashboard.php'; 
+        break;
+
+    case 'report':
+        include __DIR__ . '/views/dashboard/report-item.php';
+        break;
+
+    case 'browse':
+        include __DIR__ . '/views/dashboard/browse.php';
+        break;
+
+    case 'guest-dashboard':
+        include __DIR__ . '/views/guest-dashboard.php';
+        break;
+
+    case 'admin-dashboard':
+        include __DIR__ . '/views/admin-dashboard.php';
+        break;
+
+    case 'admin-manage':
+        include __DIR__ . '/views/admin-manage.php';
+        break;
+
     default:
-        require 'views/landing.php';
+        http_response_code(404);
+        echo "<h1>404 - Page Not Found</h1>";
         break;
 }
-?>
