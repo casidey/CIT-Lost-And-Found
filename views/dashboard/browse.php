@@ -29,7 +29,7 @@ $role          = htmlspecialchars($user['role']);
 $user_id       = (int)$_SESSION['user_id'];
 $avatar_letter = strtoupper(mb_substr($full_name, 0, 1));
 
-// ── Fetch ALL reports from DB (all users, all types) ───────────────────────
+// ── Fetch ALL reports ───────────────────────────────────────────────────────
 $items = [];
 try {
     $stmt2 = $pdo->query("
@@ -43,35 +43,46 @@ try {
     $items = [];
 }
 
-// ── Build JS-safe items array ──────────────────────────────────────────────
+// ── Fetch claims already submitted by this user ─────────────────────────────
+$my_claims = [];
+try {
+    $sc = $pdo->prepare("SELECT report_id, status FROM tblverification_requests WHERE claimant_id = ?");
+    $sc->execute([$user_id]);
+    foreach ($sc->fetchAll() as $c) {
+        $my_claims[$c['report_id']] = $c['status']; // 'pending', 'approved', 'declined'
+    }
+} catch (Exception $e) {
+    $my_claims = [];
+}
+
+// ── Build JS-safe items array ───────────────────────────────────────────────
 $js_items = [];
 foreach ($items as $item) {
-    $type       = strtoupper($item['type']); // 'LOST' or 'FOUND'
-    $is_lost    = $type === 'LOST';
+    $type        = strtoupper($item['type']);
+    $is_lost     = $type === 'LOST';
     $is_resolved = strtolower($item['status']) === 'resolved';
+    $rid         = (int)$item['id'];
 
-    // Image path
     $img_src = 'https://placehold.co/800x400/f3f4f6/9ca3af?text=No+Image';
     if (!empty($item['image'])) {
         $img_src = 'uploads/reports/' . htmlspecialchars($item['image']);
     }
 
+    $claim_status = $my_claims[$rid] ?? null; // null = no claim yet
+
     $js_items[] = [
-        'id'            => (int)$item['id'],
+        'id'            => $rid,
         'type'          => $type,
         'type_color'    => $is_lost ? 'bg-red-500' : 'bg-green-500',
         'title'         => $item['title'],
         'category'      => strtoupper($item['category']),
         'date'          => date('n/j/Y', strtotime($item['created_at'])),
-        'date_lost'     => $item['date_lost_found'] ?? '',
         'time'          => !empty($item['time_lost_found'])
                             ? date('g:i A', strtotime($item['time_lost_found']))
                             : 'N/A',
         'location'      => $item['location'],
         'status'        => $is_resolved ? 'RESOLVED' : 'PENDING',
-        'status_color'  => $is_resolved
-                            ? 'text-blue-600 bg-blue-100'
-                            : 'text-yellow-600 bg-yellow-100',
+        'status_color'  => $is_resolved ? 'text-blue-600 bg-blue-100' : 'text-yellow-600 bg-yellow-100',
         'img'           => $img_src,
         'reporter'      => $item['reporter_name'],
         'reporter_id'   => (int)$item['user_id'],
@@ -79,6 +90,7 @@ foreach ($items as $item) {
         'contact_info'  => $item['contact_info'] ?? '',
         'question'      => $item['verification_question'] ?? '',
         'is_own'        => ((int)$item['user_id'] === $user_id),
+        'claim_status'  => $claim_status, // null | 'pending' | 'approved' | 'declined'
     ];
 }
 ?>
@@ -125,9 +137,7 @@ foreach ($items as $item) {
         </nav>
         <div class="mt-auto p-6 border-t border-white/10 bg-black/5">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white font-bold border border-white/10">
-                    <?= $avatar_letter ?>
-                </div>
+                <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white font-bold border border-white/10"><?= $avatar_letter ?></div>
                 <div class="text-white overflow-hidden">
                     <p class="text-[13px] font-bold truncate"><?= $full_name ?></p>
                     <p class="text-[11px] opacity-60 capitalize"><?= $role ?></p>
@@ -137,8 +147,6 @@ foreach ($items as $item) {
     </aside>
 
     <div class="flex-1 ml-64 flex flex-col h-screen">
-
-        <!-- Header -->
         <header class="bg-white shadow-sm h-16 flex justify-between items-center px-8 border-b border-gray-100 shrink-0 z-10">
             <h1 class="text-xl font-bold text-gray-800">Browse Items</h1>
             <div class="flex items-center gap-5">
@@ -147,9 +155,7 @@ foreach ($items as $item) {
                         <p class="text-[14px] font-bold text-gray-800 leading-tight"><?= $full_name ?></p>
                         <p class="text-[11px] text-gray-400 font-medium capitalize"><?= $role ?></p>
                     </div>
-                    <div class="bg-citred text-white w-9 h-9 flex justify-center items-center rounded-full text-sm font-bold shadow-sm">
-                        <?= $avatar_letter ?>
-                    </div>
+                    <div class="bg-citred text-white w-9 h-9 flex justify-center items-center rounded-full text-sm font-bold shadow-sm"><?= $avatar_letter ?></div>
                 </div>
                 <div class="h-6 w-px bg-gray-200 mx-1"></div>
                 <a href="index.php?page=logout" class="text-[13px] text-gray-500 font-bold hover:text-citred flex items-center gap-2">
@@ -161,7 +167,6 @@ foreach ($items as $item) {
         <main class="p-8 w-full max-w-screen-2xl mx-auto overflow-y-auto">
             <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 min-h-[calc(100vh-8rem)]">
 
-                <!-- Top bar -->
                 <div class="flex flex-col md:flex-row justify-between md:items-center gap-6 mb-10">
                     <div>
                         <h2 class="text-2xl font-bold text-gray-900 mb-1">Browse Items</h2>
@@ -181,7 +186,6 @@ foreach ($items as $item) {
                     </div>
                 </div>
 
-                <!-- Cards grid -->
                 <?php if (empty($items)): ?>
                 <div class="flex flex-col items-center justify-center py-20 text-center">
                     <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
@@ -189,8 +193,7 @@ foreach ($items as $item) {
                     </div>
                     <p class="text-[15px] font-bold text-gray-400 mb-1">No items reported yet</p>
                     <p class="text-[13px] text-gray-400 mb-6">Be the first to report a lost or found item.</p>
-                    <a href="index.php?page=report"
-                       class="bg-citred hover:bg-citdarkred text-white font-bold text-sm px-6 py-2.5 rounded-lg flex items-center gap-2 transition-all shadow-sm">
+                    <a href="index.php?page=report" class="bg-citred hover:bg-citdarkred text-white font-bold text-sm px-6 py-2.5 rounded-lg flex items-center gap-2 transition-all shadow-sm">
                         <i class="fa-solid fa-circle-plus"></i> Report an Item
                     </a>
                 </div>
@@ -199,9 +202,8 @@ foreach ($items as $item) {
                     <?php foreach ($js_items as $index => $item): ?>
                     <div class="item-card bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col group cursor-pointer"
                          data-type="<?= $item['type'] ?>"
-                         data-title="<?= strtolower($item['title']) ?>"
+                         data-title="<?= strtolower(htmlspecialchars($item['title'])) ?>"
                          onclick="openModal(<?= $index ?>)">
-
                         <div class="relative h-48 bg-gray-50 overflow-hidden">
                             <div class="absolute top-3 left-3 <?= $item['type_color'] ?> text-white text-[10px] font-bold px-3 py-1 rounded shadow-sm z-10 uppercase tracking-widest">
                                 <?= $item['type'] ?>
@@ -210,29 +212,17 @@ foreach ($items as $item) {
                                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                  onerror="this.src='https://placehold.co/800x400/f3f4f6/9ca3af?text=No+Image'">
                         </div>
-
                         <div class="p-5 flex-1 flex flex-col">
-                            <h3 class="font-bold text-gray-900 text-[15px] mb-1 group-hover:text-citred transition-colors">
-                                <?= htmlspecialchars($item['title']) ?>
-                            </h3>
-                            <span class="text-[10px] font-bold px-2.5 py-1 rounded-lg w-max <?= $item['status_color'] ?> uppercase tracking-wider mb-3">
-                                <?= $item['status'] ?>
-                            </span>
-                            <p class="text-[12px] text-gray-400 font-medium mb-1">
-                                <i class="fa-regular fa-calendar mr-1"></i><?= $item['date'] ?>
-                            </p>
-                            <p class="text-[12px] text-gray-400 font-medium mb-4">
-                                <i class="fa-solid fa-location-dot mr-1"></i><?= htmlspecialchars($item['location']) ?>
-                            </p>
-
+                            <h3 class="font-bold text-gray-900 text-[15px] mb-1 group-hover:text-citred transition-colors"><?= htmlspecialchars($item['title']) ?></h3>
+                            <span class="text-[10px] font-bold px-2.5 py-1 rounded-lg w-max <?= $item['status_color'] ?> uppercase tracking-wider mb-3"><?= $item['status'] ?></span>
+                            <p class="text-[12px] text-gray-400 font-medium mb-1"><i class="fa-regular fa-calendar mr-1"></i><?= $item['date'] ?></p>
+                            <p class="text-[12px] text-gray-400 font-medium mb-4"><i class="fa-solid fa-location-dot mr-1"></i><?= htmlspecialchars($item['location']) ?></p>
                             <div class="mt-auto pt-3 border-t border-gray-50 flex justify-between items-center">
                                 <div class="flex items-center gap-2">
                                     <div class="w-6 h-6 bg-citred text-white flex items-center justify-center rounded-full text-[10px] font-bold">
                                         <?= strtoupper(mb_substr($item['reporter'], 0, 1)) ?>
                                     </div>
-                                    <p class="text-[11px] text-gray-500 font-medium">
-                                        Rep. by <?= htmlspecialchars(explode(' ', $item['reporter'])[0]) ?>
-                                    </p>
+                                    <p class="text-[11px] text-gray-500 font-medium">Rep. by <?= htmlspecialchars(explode(' ', $item['reporter'])[0]) ?></p>
                                 </div>
                                 <button class="text-[12px] text-citred font-bold hover:underline">View Details</button>
                             </div>
@@ -241,7 +231,6 @@ foreach ($items as $item) {
                     <?php endforeach; ?>
                 </div>
 
-                <!-- No results message (hidden by default) -->
                 <div id="noResults" class="hidden flex-col items-center justify-center py-16 text-center">
                     <i class="fa-solid fa-magnifying-glass text-3xl text-gray-200 mb-4"></i>
                     <p class="text-[15px] font-bold text-gray-400">No items match your search.</p>
@@ -253,22 +242,19 @@ foreach ($items as $item) {
     </div>
 </div>
 
-<!-- ── ITEM MODAL ──────────────────────────────────────────────────────────── -->
+<!-- ── MODAL ───────────────────────────────────────────────────────────────── -->
 <div id="itemModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-4xl rounded-2xl overflow-hidden shadow-2xl relative flex flex-col max-h-[90vh]">
-
         <button onclick="closeModal()" class="absolute top-4 right-4 z-20 w-8 h-8 bg-white text-gray-600 hover:text-gray-900 rounded-full flex items-center justify-center shadow-md transition-all">
             <i class="fa-solid fa-xmark text-sm"></i>
         </button>
 
-        <!-- Banner -->
         <div class="relative h-64 bg-gray-100 shrink-0">
             <div id="modalTypeBadge" class="absolute top-4 left-4 text-white text-[10px] font-bold px-3 py-1.5 rounded shadow-sm z-10 uppercase tracking-widest"></div>
             <img id="modalImg" src="" alt="Item Image" class="w-full h-full object-cover"
                  onerror="this.src='https://placehold.co/800x400/f3f4f6/9ca3af?text=No+Image'">
         </div>
 
-        <!-- Content -->
         <div class="p-8 overflow-y-auto">
             <div class="mb-6">
                 <h2 id="modalTitle" class="text-2xl font-bold text-gray-900 mb-2"></h2>
@@ -279,7 +265,6 @@ foreach ($items as $item) {
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
-                <!-- Left: Details -->
                 <div>
                     <h3 class="text-[12px] font-bold text-gray-800 uppercase tracking-widest border-b border-gray-100 pb-2 mb-4">Details</h3>
                     <div class="space-y-5">
@@ -307,14 +292,12 @@ foreach ($items as $item) {
                     </div>
                 </div>
 
-                <!-- Right: Dynamic section -->
                 <div>
-                    <h3 id="dynamicSectionTitle" class="text-[12px] font-bold text-gray-800 uppercase tracking-widest border-b border-gray-100 pb-2 mb-4">Actions</h3>
+                    <h3 id="dynamicSectionTitle" class="text-[12px] font-bold text-gray-800 uppercase tracking-widest border-b border-gray-100 pb-2 mb-4">Contact Info</h3>
                     <div id="dynamicContentBox"></div>
                 </div>
             </div>
 
-            <!-- Description -->
             <div class="mt-8 pt-6 border-t border-gray-100">
                 <h3 class="text-[12px] font-bold text-gray-800 uppercase tracking-widest mb-3">Description</h3>
                 <div class="border border-gray-200 rounded-xl p-4 text-sm text-gray-600 bg-gray-50">
@@ -330,7 +313,7 @@ const itemsData  = <?= json_encode(array_values($js_items)) ?>;
 const currentUID = <?= $user_id ?>;
 const itemModal  = document.getElementById('itemModal');
 
-// ── Filter buttons ──────────────────────────────────────────────────────────
+// ── Filter ──────────────────────────────────────────────────────────────────
 document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.filter-btn').forEach(b => {
@@ -343,7 +326,6 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
     });
 });
 
-// ── Search ──────────────────────────────────────────────────────────────────
 document.getElementById('searchInput').addEventListener('input', filterCards);
 
 function filterCards() {
@@ -351,18 +333,16 @@ function filterCards() {
     const search  = document.getElementById('searchInput').value.toLowerCase();
     const cards   = document.querySelectorAll('.item-card');
     let   visible = 0;
-
     cards.forEach(card => {
         const typeMatch  = filter === 'ALL' || card.getAttribute('data-type') === filter;
         const titleMatch = card.getAttribute('data-title').includes(search);
         if (typeMatch && titleMatch) { card.classList.remove('hidden'); visible++; }
-        else                         { card.classList.add('hidden'); }
+        else { card.classList.add('hidden'); }
     });
-
     const noResults = document.getElementById('noResults');
     if (noResults) {
-        noResults.classList.toggle('hidden',  visible > 0);
-        noResults.classList.toggle('flex',    visible === 0);
+        noResults.classList.toggle('hidden', visible > 0);
+        noResults.classList.toggle('flex',   visible === 0);
     }
 }
 
@@ -370,7 +350,7 @@ function filterCards() {
 function openModal(index) {
     const item = itemsData[index];
 
-    document.getElementById('modalImg').src         = item.img;
+    document.getElementById('modalImg').src              = item.img;
     document.getElementById('modalTitle').textContent    = item.title;
     document.getElementById('modalCategory').textContent = item.category;
     document.getElementById('modalLocation').textContent = item.location;
@@ -378,29 +358,29 @@ function openModal(index) {
     document.getElementById('modalReporter').textContent = item.reporter;
     document.getElementById('modalDesc').textContent     = item.desc;
 
-    const typeBadge   = document.getElementById('modalTypeBadge');
+    const typeBadge = document.getElementById('modalTypeBadge');
     typeBadge.textContent = item.type;
     typeBadge.className   = `absolute top-4 left-4 text-white text-[10px] font-bold px-3 py-1.5 rounded shadow-sm z-10 uppercase tracking-widest ${item.type_color}`;
 
-    const statusBadge   = document.getElementById('modalStatus');
+    const statusBadge = document.getElementById('modalStatus');
     statusBadge.textContent = item.status;
     statusBadge.className   = `text-[10px] font-bold px-2.5 py-1 rounded uppercase tracking-wider ${item.status_color}`;
 
     const dynamicBox   = document.getElementById('dynamicContentBox');
     const sectionTitle = document.getElementById('dynamicSectionTitle');
 
-    // OWN item — show "This is your report" note
+    // ── OWN item ────────────────────────────────────────────────────────────
     if (item.is_own) {
         sectionTitle.textContent = 'Your Report';
         dynamicBox.innerHTML = `
             <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 text-center">
                 <i class="fa-solid fa-circle-check text-green-500 text-2xl mb-2 block"></i>
                 <p class="font-bold text-gray-700 text-sm">This is your report.</p>
-                <p class="text-[11px] text-gray-400 mt-1">Others can see this and claim or contact you.</p>
+                <p class="text-[11px] text-gray-400 mt-1">Others can see this and submit a claim.</p>
             </div>`;
 
+    // ── LOST item (someone else's) ───────────────────────────────────────────
     } else if (item.type === 'LOST') {
-        // Someone else's LOST item — show contact info if available
         sectionTitle.textContent = 'Contact Info';
         dynamicBox.innerHTML = item.contact_info
             ? `<div class="border border-gray-200 rounded-xl p-5 shadow-sm">
@@ -413,43 +393,81 @@ function openModal(index) {
                    <p class="text-[11px] text-gray-400">Please contact the reporter through other means.</p>
                </div>`;
 
+    // ── FOUND item (someone else's) — show claim UI ──────────────────────────
     } else {
-        // Someone else's FOUND item — show verification claim form
         sectionTitle.textContent = 'Claim This Item';
-        dynamicBox.innerHTML = `
-            <div class="bg-[#F4F6FB] border border-[#E2E8F0] rounded-xl p-6">
-                <div class="flex items-center gap-2 mb-3">
-                    <i class="fa-solid fa-shield-halved text-blue-600"></i>
-                    <h4 class="font-bold text-[14px] text-blue-900">Proof Before Claim</h4>
-                </div>
-                <p class="text-[11px] text-blue-600/80 mb-5 leading-relaxed">Answer the finder's verification question to prove ownership.</p>
-                <div class="mb-4">
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Question:</label>
-                    <p class="text-sm font-bold text-gray-900 bg-white border border-gray-200 px-3 py-2 rounded-lg">
-                        ${item.question || 'Describe the item in detail.'}
+
+        // Already approved
+        if (item.claim_status === 'approved') {
+            dynamicBox.innerHTML = `
+                <div class="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
+                    <i class="fa-solid fa-circle-check text-green-500 text-2xl mb-2 block"></i>
+                    <h4 class="font-bold text-green-700 text-sm mb-1">Ownership Verified by Finder</h4>
+                    <p class="text-[11px] text-green-600">
+                        ${item.contact_info ? 'Contact: <strong>' + item.contact_info + '</strong>' : 'Please contact the reporter directly to claim this item or provide information.'}
                     </p>
+                </div>`;
+
+        // Already pending
+        } else if (item.claim_status === 'pending') {
+            dynamicBox.innerHTML = `
+                <div class="bg-[#FAFAF5] border border-[#EAEAB5] rounded-xl p-6 text-center">
+                    <i class="fa-regular fa-clock text-[#A1A142] text-2xl mb-3 block"></i>
+                    <h4 class="font-bold text-[14px] text-[#8C8C27] mb-2">Verification Pending</h4>
+                    <p class="text-[11px] text-[#A1A142] leading-relaxed px-2">
+                        Your answer has been sent to the finder. You'll see their contact info once they approve.
+                    </p>
+                </div>`;
+
+        // Declined — allow re-submission
+        } else if (item.claim_status === 'declined') {
+            dynamicBox.innerHTML = `
+                <div class="bg-red-50 border border-red-200 rounded-xl p-5 text-center mb-3">
+                    <i class="fa-solid fa-circle-xmark text-red-400 text-xl mb-1 block"></i>
+                    <p class="font-bold text-red-600 text-sm">Your previous claim was declined.</p>
+                    <p class="text-[11px] text-red-400 mt-1">You may try again below.</p>
                 </div>
-                <input type="text" id="verificationAnswer" placeholder="Your answer..."
-                       class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-500 mb-3 shadow-sm">
-                <button onclick="submitVerification(${item.id})"
-                        class="w-full bg-[#1D4ED8] hover:bg-blue-800 text-white font-bold text-[12px] py-2.5 rounded-lg transition-all shadow-sm">
-                    Submit Answer for Verification
-                </button>
-            </div>`;
+                ${buildClaimForm(item)}`;
+
+        // No claim yet — show the form
+        } else {
+            dynamicBox.innerHTML = buildClaimForm(item);
+        }
     }
 
     itemModal.classList.remove('hidden');
 }
 
-function closeModal() {
-    itemModal.classList.add('hidden');
+function buildClaimForm(item) {
+    return `
+        <div class="bg-[#F4F6FB] border border-[#E2E8F0] rounded-xl p-6">
+            <div class="flex items-center gap-2 mb-3">
+                <i class="fa-solid fa-shield-halved text-blue-600"></i>
+                <h4 class="font-bold text-[14px] text-blue-900">Proof Before Claim</h4>
+            </div>
+            <p class="text-[11px] text-blue-600/80 mb-5 leading-relaxed">
+                The finder has set a hidden question to verify the real owner.
+            </p>
+            <div class="mb-4">
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Question:</label>
+                <p class="text-sm font-bold text-gray-900 bg-white border border-gray-200 px-3 py-2 rounded-lg">
+                    ${item.question || 'Describe the item in detail.'}
+                </p>
+            </div>
+            <input type="text" id="verificationAnswer" placeholder="Your answer..."
+                   class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-500 mb-3 shadow-sm">
+            <button onclick="submitVerification(${item.id})"
+                    class="w-full bg-[#1D4ED8] hover:bg-blue-800 text-white font-bold text-[12px] py-2.5 rounded-lg transition-all shadow-sm">
+                Submit Answer for Verification
+            </button>
+        </div>`;
 }
 
 function submitVerification(reportId) {
-    const answer = document.getElementById('verificationAnswer')?.value?.trim();
+    const answerEl = document.getElementById('verificationAnswer');
+    const answer   = answerEl?.value?.trim();
     if (!answer) { alert('Please enter your answer.'); return; }
 
-    // Send to server via fetch
     fetch('index.php?page=submit_claim', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -458,8 +476,12 @@ function submitVerification(reportId) {
     .then(res => res.json())
     .then(data => {
         if (data.success) {
+            // Update in-memory claim_status so reopening the modal shows pending state
+            const idx = itemsData.findIndex(i => i.id === reportId);
+            if (idx !== -1) itemsData[idx].claim_status = 'pending';
+
             document.getElementById('dynamicContentBox').innerHTML = `
-                <div class="bg-[#FAFAF5] border border-[#EAEAB5] rounded-xl p-6 text-center shadow-sm">
+                <div class="bg-[#FAFAF5] border border-[#EAEAB5] rounded-xl p-6 text-center">
                     <i class="fa-regular fa-clock text-[#A1A142] text-2xl mb-3 block"></i>
                     <h4 class="font-bold text-[14px] text-[#8C8C27] mb-2">Verification Pending</h4>
                     <p class="text-[11px] text-[#A1A142] leading-relaxed px-2">
@@ -471,19 +493,11 @@ function submitVerification(reportId) {
         }
     })
     .catch(() => {
-        // Fallback: just show pending UI
-        document.getElementById('dynamicContentBox').innerHTML = `
-            <div class="bg-[#FAFAF5] border border-[#EAEAB5] rounded-xl p-6 text-center shadow-sm">
-                <i class="fa-regular fa-clock text-[#A1A142] text-2xl mb-3 block"></i>
-                <h4 class="font-bold text-[14px] text-[#8C8C27] mb-2">Verification Pending</h4>
-                <p class="text-[11px] text-[#A1A142] leading-relaxed px-2">
-                    Your answer has been submitted.
-                </p>
-            </div>`;
+        alert('Network error. Please try again.');
     });
 }
 
-// Close modal on outside click
+function closeModal() { itemModal.classList.add('hidden'); }
 itemModal.addEventListener('click', e => { if (e.target === itemModal) closeModal(); });
 </script>
 </body>

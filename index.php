@@ -49,13 +49,17 @@ switch ($page) {
         break;
 
     case 'admin-dashboard':
-        include __DIR__ . '/views/admin-dashboard.php';
+        include __DIR__ . '/views/Admin Dashboard/admin-dashboard.php';
         break;
-
     case 'admin-manage':
-        include __DIR__ . '/views/admin-manage.php';
+        include __DIR__ . '/views/Admin Dashboard/admin-manage.php';
         break;
-
+    case 'submit_claim':
+        include __DIR__ . '/views/dashboard/submit_claim.php';
+        break;
+    case 'verification':
+        include __DIR__ . '/views/dashboard/verification.php';
+        break;
     default:
         http_response_code(404);
         echo "<h1>404 - Page Not Found</h1>";

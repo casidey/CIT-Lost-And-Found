@@ -4,9 +4,13 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// If already logged in, go straight to dashboard
+// If already logged in, redirect based on role
 if (isset($_SESSION['user_id'])) {
-    header("Location: index.php?page=dashboard");
+    if ($_SESSION['role'] === 'admin') {
+        header("Location: index.php?page=admin-dashboard");
+    } else {
+        header("Location: index.php?page=dashboard");
+    }
     exit();
 }
 
@@ -24,14 +28,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $stmt->execute([$email, $selected_role]);
         $user = $stmt->fetch();
 
-        // Supports both plain-text passwords (dev) and hashed passwords (production)
+        // Supports both plain-text and hashed passwords
         $password_ok = false;
         if ($user) {
             if (password_verify($password, $user['password'])) {
                 $password_ok = true;
             } elseif ($password === $user['password']) {
-                // plain-text fallback (your current DB has plain text)
-                $password_ok = true;
+                $password_ok = true; // plain-text fallback
             }
         }
 
@@ -40,8 +43,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $_SESSION['role']    = $user['role'];
             $_SESSION['email']   = $user['email'];
 
-            header("Location: index.php?page=dashboard");
+            // ── Redirect based on role ──────────────────────────────────
+            if ($user['role'] === 'admin') {
+                header("Location: index.php?page=admin-dashboard");
+            } else {
+                // student and faculty both go to the regular dashboard
+                header("Location: index.php?page=dashboard");
+            }
             exit();
+
         } else {
             $error = "Invalid email, password, or role selection.";
         }
@@ -106,7 +116,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <h2 class="text-[28px] font-extrabold text-gray-900 mb-2">Log In</h2>
             <p class="text-[14px] text-gray-500 mb-8 font-medium">Please select your role and enter your credentials to Log In</p>
 
-            <!-- Error message -->
             <?php if (!empty($error)): ?>
                 <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6 text-sm" role="alert">
                     <span class="block sm:inline"><?= htmlspecialchars($error) ?></span>
@@ -116,7 +125,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <form id="login-form" action="index.php?page=login" method="POST" class="space-y-6">
                 <input type="hidden" name="role" id="selected-role" value="student">
 
-                <!-- Role selector -->
+                <!-- Role Buttons -->
                 <div class="grid grid-cols-3 gap-4 mb-8">
                     <button type="button" id="btn-student" class="role-btn bg-citred text-white border-transparent shadow-md hover:bg-citdarkred py-4 rounded-xl flex flex-col items-center justify-center gap-2.5 transition-all duration-200">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="w-7 h-7">

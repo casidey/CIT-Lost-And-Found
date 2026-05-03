@@ -2,7 +2,7 @@
 // config/db.php
 
 $host = 'localhost';
-$dbname = 'cit_lost&found'; // Your specific DB name
+$dbname = 'cit_lost&found'; 
 $username = 'root'; 
 $password = '';
 
