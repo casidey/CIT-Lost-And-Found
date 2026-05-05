@@ -45,7 +45,11 @@ switch ($page) {
         break;
 
     case 'guest-dashboard':
-        include __DIR__ . '/views/guest-dashboard.php';
+        include __DIR__ . '/views/Guest/guest-dashboard.php';
+        break;
+   
+    case 'guest-browse':
+        include __DIR__ . '/views/Guest/guest-browse.php';
         break;
 
     case 'admin-dashboard':
@@ -54,11 +58,17 @@ switch ($page) {
     case 'admin-manage':
         include __DIR__ . '/views/Admin Dashboard/admin-manage.php';
         break;
+    case 'admin-notifications': 
+        include __DIR__ . '/views/Admin Dashboard/admin-notifications.php'; 
+        break;
     case 'submit_claim':
         include __DIR__ . '/views/dashboard/submit_claim.php';
         break;
     case 'verification':
         include __DIR__ . '/views/dashboard/verification.php';
+        break;
+    case 'mark_found':        
+        include __DIR__ . '/views/dashboard/mark_found.php';            
         break;
     default:
         http_response_code(404);

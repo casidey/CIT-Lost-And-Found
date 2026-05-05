@@ -16,16 +16,18 @@ $stmt = $pdo->prepare("SELECT * FROM tblusers WHERE id = ? LIMIT 1");
 $stmt->execute([$_SESSION['user_id']]);
 $admin = $stmt->fetch();
 
-if (!$admin) {
-    session_destroy();
-    header("Location: index.php?page=login");
-    exit();
-}
+if (!$admin) { session_destroy(); header("Location: index.php?page=login"); exit(); }
 
 $admin_name    = htmlspecialchars($admin['fullname']);
 $avatar_letter = strtoupper(mb_substr($admin_name, 0, 1));
 
-// ── Handle actions (resolve / delete) ──────────────────────────────────────
+// ── Unread notifications count ──────────────────────────────────────────────
+$unread_count = 0;
+try {
+    $unread_count = (int)$pdo->query("SELECT COUNT(*) FROM tblnotifications WHERE is_read = 0")->fetchColumn();
+} catch (Exception $e) {}
+
+// ── Handle actions ──────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action    = $_POST['action']    ?? '';
     $report_id = (int)($_POST['report_id'] ?? 0);
@@ -38,7 +40,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->prepare("UPDATE tblreports SET status = 'pending' WHERE id = ?")
                 ->execute([$report_id]);
         } elseif ($action === 'delete') {
-            // Also delete the image file if it exists
             $row = $pdo->prepare("SELECT image FROM tblreports WHERE id = ?");
             $row->execute([$report_id]);
             $img = $row->fetchColumn();
@@ -72,11 +73,7 @@ $manage_items = $pdo->query("
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
         tailwind.config = {
-            theme: {
-                extend: {
-                    colors: { citred: '#DC2626', citdarkred: '#b91c1c', bglight: '#F8FAFC' }
-                }
-            }
+            theme: { extend: { colors: { citred: '#DC2626', citdarkred: '#b91c1c', bglight: '#F8FAFC' } } }
         }
     </script>
 </head>
@@ -91,14 +88,34 @@ $manage_items = $pdo->query("
             </div>
             <h2 class="text-center text-xs font-bold tracking-wider leading-tight">CIT UNIVERSITY<br>LOST &amp; FOUND</h2>
         </div>
+
         <nav class="flex-1 px-4 space-y-2">
-            <a href="index.php?page=admin-dashboard" class="flex items-center gap-3 px-4 py-2.5 rounded text-sm font-medium text-red-100 hover:bg-white/10 transition">
+            <!-- Dashboard -->
+            <a href="index.php?page=admin-dashboard"
+               class="flex items-center gap-3 px-4 py-2.5 rounded text-sm font-medium text-red-100 hover:bg-white/10 transition">
                 <i class="fa-solid fa-border-all w-5"></i> Dashboard
             </a>
-            <a href="index.php?page=admin-manage" class="flex items-center gap-3 px-4 py-2.5 rounded text-sm font-semibold bg-white/20 shadow-sm text-white transition">
+
+            <!-- Manage Items (active) -->
+            <a href="index.php?page=admin-manage"
+               class="flex items-center gap-3 px-4 py-2.5 rounded text-sm font-semibold bg-white/20 shadow-sm text-white transition">
                 <i class="fa-solid fa-box-open w-5"></i> Manage Items
             </a>
+
+            <!-- Notifications with badge -->
+            <a href="index.php?page=admin-notifications"
+               class="flex items-center justify-between px-4 py-2.5 rounded text-sm font-medium text-red-100 hover:bg-white/10 transition">
+                <span class="flex items-center gap-3">
+                    <i class="fa-solid fa-bell w-5"></i> Notifications
+                </span>
+                <?php if ($unread_count > 0): ?>
+                <span class="bg-white text-citred text-[10px] font-black px-2 py-0.5 rounded-full min-w-[20px] text-center">
+                    <?= $unread_count ?>
+                </span>
+                <?php endif; ?>
+            </a>
         </nav>
+
         <div class="p-4 border-t border-red-500/30 flex items-center gap-3 mt-auto">
             <div class="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center text-white font-bold border border-white/20">
                 <?= $avatar_letter ?>
@@ -116,6 +133,15 @@ $manage_items = $pdo->query("
         <header class="bg-white shadow-sm h-16 flex justify-between items-center px-8 border-b border-gray-100 shrink-0">
             <h1 class="text-xl font-bold text-gray-900">Manage Items</h1>
             <div class="flex items-center gap-4">
+                <!-- Notification Bell -->
+                <a href="index.php?page=admin-notifications" class="relative text-gray-500 hover:text-citred transition">
+                    <i class="fa-regular fa-bell text-xl"></i>
+                    <?php if ($unread_count > 0): ?>
+                    <span class="absolute -top-1 -right-1 bg-citred text-white text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full">
+                        <?= $unread_count ?>
+                    </span>
+                    <?php endif; ?>
+                </a>
                 <div class="text-right hidden md:block">
                     <p class="text-sm font-bold text-gray-800">
                         <?= $admin_name ?>
@@ -144,8 +170,9 @@ $manage_items = $pdo->query("
                 <div class="flex flex-col items-center justify-center py-16 text-center">
                     <i class="fa-solid fa-inbox text-4xl text-gray-200 mb-3"></i>
                     <p class="text-gray-400 font-bold text-[15px]">No items reported yet.</p>
-                    <p class="text-gray-400 text-sm">Reports from students and faculty will appear here.</p>
+                    <p class="text-gray-400 text-sm mt-1">Reports from students and faculty will appear here.</p>
                 </div>
+
                 <?php else: ?>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
@@ -173,7 +200,7 @@ $manage_items = $pdo->query("
                                     $date_time .= ' – ' . date('g:i A', strtotime($item['time_lost_found']));
                                 }
                             ?>
-                            <tr class="border-b border-gray-50 hover:bg-gray-50 transition" id="row-<?= $item['id'] ?>">
+                            <tr class="border-b border-gray-50 hover:bg-gray-50 transition">
 
                                 <!-- Item -->
                                 <td class="py-5 px-4">
@@ -186,7 +213,9 @@ $manage_items = $pdo->query("
                                             <p class="text-[10px] text-gray-400 mt-0.5 uppercase tracking-wide font-semibold">
                                                 <?= htmlspecialchars($item['category']) ?>
                                                 &nbsp;•&nbsp;
-                                                <span class="<?= $is_lost ? 'text-red-500' : 'text-green-600' ?>"><?= strtoupper($item['type']) ?></span>
+                                                <span class="<?= $is_lost ? 'text-red-500' : 'text-green-600' ?>">
+                                                    <?= strtoupper($item['type']) ?>
+                                                </span>
                                             </p>
                                         </div>
                                     </div>
@@ -216,18 +245,20 @@ $manage_items = $pdo->query("
                                     <div class="flex items-center justify-center gap-4">
 
                                         <!-- Toggle Resolve / Unresolve -->
-                                        <form method="POST" action="index.php?page=admin-manage" onsubmit="return confirm('<?= $is_resolved ? 'Mark as pending?' : 'Mark this item as resolved?' ?>')">
+                                        <form method="POST" action="index.php?page=admin-manage"
+                                              onsubmit="return confirm('<?= $is_resolved ? 'Mark as pending?' : 'Mark this item as resolved?' ?>')">
                                             <input type="hidden" name="report_id" value="<?= $item['id'] ?>">
                                             <input type="hidden" name="action" value="<?= $is_resolved ? 'unresolve' : 'resolve' ?>">
                                             <button type="submit"
                                                     title="<?= $is_resolved ? 'Mark as Pending' : 'Mark as Resolved' ?>"
                                                     class="<?= $is_resolved ? 'text-yellow-500 hover:text-yellow-700' : 'text-green-500 hover:text-green-700' ?> transition">
-                                                <i class="fa-solid <?= $is_resolved ? 'fa-rotate-left' : 'fa-check' ?> text-2xl font-black"></i>
+                                                <i class="fa-solid <?= $is_resolved ? 'fa-rotate-left' : 'fa-check' ?> text-2xl"></i>
                                             </button>
                                         </form>
 
                                         <!-- Delete -->
-                                        <form method="POST" action="index.php?page=admin-manage" onsubmit="return confirm('Delete this report permanently? This cannot be undone.')">
+                                        <form method="POST" action="index.php?page=admin-manage"
+                                              onsubmit="return confirm('Delete this report permanently? This cannot be undone.')">
                                             <input type="hidden" name="report_id" value="<?= $item['id'] ?>">
                                             <input type="hidden" name="action" value="delete">
                                             <button type="submit" title="Delete Report"

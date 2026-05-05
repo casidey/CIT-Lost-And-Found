@@ -11,33 +11,33 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 
 require_once __DIR__ . '/../../config/db.php';
 
-// ── Fetch admin user ────────────────────────────────────────────────────────
 $stmt = $pdo->prepare("SELECT * FROM tblusers WHERE id = ? LIMIT 1");
 $stmt->execute([$_SESSION['user_id']]);
 $admin = $stmt->fetch();
 
-if (!$admin) {
-    session_destroy();
-    header("Location: index.php?page=login");
-    exit();
-}
+if (!$admin) { session_destroy(); header("Location: index.php?page=login"); exit(); }
 
 $admin_name    = htmlspecialchars($admin['fullname']);
 $avatar_letter = strtoupper(mb_substr($admin_name, 0, 1));
+$first_name    = htmlspecialchars(explode(' ', trim($admin['fullname']))[0]);
 
-// ── Stats from DB ───────────────────────────────────────────────────────────
+// Stats
 $total_lost     = $pdo->query("SELECT COUNT(*) FROM tblreports WHERE type = 'lost'")->fetchColumn();
 $total_found    = $pdo->query("SELECT COUNT(*) FROM tblreports WHERE type = 'found'")->fetchColumn();
 $total_resolved = $pdo->query("SELECT COUNT(*) FROM tblreports WHERE status = 'resolved'")->fetchColumn();
 $total_all      = $pdo->query("SELECT COUNT(*) FROM tblreports")->fetchColumn();
 
-// ── Recent reports (last 10) ────────────────────────────────────────────────
+// Unread notifications count
+$unread_count = 0;
+try {
+    $unread_count = (int)$pdo->query("SELECT COUNT(*) FROM tblnotifications WHERE is_read = 0")->fetchColumn();
+} catch (Exception $e) {}
+
+// Recent reports
 $reports = $pdo->query("
     SELECT r.*, u.fullname AS reporter_name
-    FROM tblreports r
-    JOIN tblusers u ON r.user_id = u.id
-    ORDER BY r.created_at DESC
-    LIMIT 10
+    FROM tblreports r JOIN tblusers u ON r.user_id = u.id
+    ORDER BY r.created_at DESC LIMIT 10
 ")->fetchAll();
 ?>
 <!DOCTYPE html>
@@ -49,13 +49,7 @@ $reports = $pdo->query("
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: { citred: '#DC2626', citdarkred: '#b91c1c', bglight: '#F8FAFC' }
-                }
-            }
-        }
+        tailwind.config = { theme: { extend: { colors: { citred: '#DC2626', citdarkred: '#b91c1c', bglight: '#F8FAFC' } } } }
     </script>
 </head>
 <body class="bg-bglight">
@@ -76,11 +70,19 @@ $reports = $pdo->query("
             <a href="index.php?page=admin-manage" class="flex items-center gap-3 px-4 py-2.5 rounded text-sm font-medium text-red-100 hover:bg-white/10 transition">
                 <i class="fa-solid fa-box-open w-5"></i> Manage Items
             </a>
+            <a href="index.php?page=admin-notifications" class="flex items-center justify-between px-4 py-2.5 rounded text-sm font-medium text-red-100 hover:bg-white/10 transition">
+                <span class="flex items-center gap-3">
+                    <i class="fa-solid fa-bell w-5"></i> Notifications
+                </span>
+                <?php if ($unread_count > 0): ?>
+                <span class="bg-white text-citred text-[10px] font-black px-2 py-0.5 rounded-full min-w-[20px] text-center">
+                    <?= $unread_count ?>
+                </span>
+                <?php endif; ?>
+            </a>
         </nav>
         <div class="p-4 border-t border-red-500/30 flex items-center gap-3 mt-auto">
-            <div class="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center text-white font-bold border border-white/20">
-                <?= $avatar_letter ?>
-            </div>
+            <div class="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center text-white font-bold border border-white/20"><?= $avatar_letter ?></div>
             <div>
                 <p class="text-xs font-bold truncate max-w-[140px]"><?= $admin_name ?></p>
                 <p class="text-[10px] text-red-200">Admin</p>
@@ -89,17 +91,22 @@ $reports = $pdo->query("
     </aside>
 
     <div class="flex-1 ml-64 flex flex-col h-screen">
-
-        <!-- Header -->
         <header class="bg-white shadow-sm h-16 flex justify-between items-center px-8 border-b border-gray-100 shrink-0">
             <h1 class="text-xl font-bold text-gray-900">Admin Dashboard</h1>
             <div class="flex items-center gap-4">
+                <!-- Notification Bell -->
+                <a href="index.php?page=admin-notifications" class="relative text-gray-500 hover:text-citred transition">
+                    <i class="fa-regular fa-bell text-xl"></i>
+                    <?php if ($unread_count > 0): ?>
+                    <span class="absolute -top-1 -right-1 bg-citred text-white text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full">
+                        <?= $unread_count ?>
+                    </span>
+                    <?php endif; ?>
+                </a>
                 <div class="text-right hidden md:block">
                     <p class="text-sm font-bold text-gray-800">
                         <?= $admin_name ?>
-                        <span class="bg-citred text-white w-7 h-7 inline-flex justify-center items-center rounded-full ml-1 text-xs">
-                            <?= $avatar_letter ?>
-                        </span>
+                        <span class="bg-citred text-white w-7 h-7 inline-flex justify-center items-center rounded-full ml-1 text-xs"><?= $avatar_letter ?></span>
                     </p>
                     <p class="text-[10px] text-gray-400">Admin</p>
                 </div>
@@ -110,53 +117,32 @@ $reports = $pdo->query("
         </header>
 
         <main class="p-8 max-w-6xl w-full mx-auto overflow-y-auto flex-1">
-
             <div class="mb-8">
-                <h2 class="text-2xl font-bold text-gray-900 mb-1">Welcome back, <?= htmlspecialchars(explode(' ', $admin['fullname'])[0]) ?>!</h2>
+                <h2 class="text-2xl font-bold text-gray-900 mb-1">Welcome back, <?= $first_name ?>!</h2>
                 <p class="text-sm text-gray-500">System overview and statistics</p>
             </div>
 
             <!-- Stats -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
                 <div class="bg-white py-8 px-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-5 hover:shadow-md transition">
-                    <div class="w-14 h-14 rounded-full border-2 border-red-100 text-red-400 flex items-center justify-center text-2xl">
-                        <i class="fa-solid fa-circle-exclamation"></i>
-                    </div>
-                    <div>
-                        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">LOST ITEMS</p>
-                        <p class="text-4xl font-black text-gray-800"><?= $total_lost ?></p>
-                    </div>
+                    <div class="w-14 h-14 rounded-full border-2 border-red-100 text-red-400 flex items-center justify-center text-2xl"><i class="fa-solid fa-circle-exclamation"></i></div>
+                    <div><p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">LOST ITEMS</p><p class="text-4xl font-black text-gray-800"><?= $total_lost ?></p></div>
                 </div>
                 <div class="bg-white py-8 px-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-5 hover:shadow-md transition">
-                    <div class="w-14 h-14 rounded-full border-2 border-green-100 text-green-500 flex items-center justify-center text-2xl">
-                        <i class="fa-regular fa-circle-check"></i>
-                    </div>
-                    <div>
-                        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">FOUND ITEMS</p>
-                        <p class="text-4xl font-black text-gray-800"><?= $total_found ?></p>
-                    </div>
+                    <div class="w-14 h-14 rounded-full border-2 border-green-100 text-green-500 flex items-center justify-center text-2xl"><i class="fa-regular fa-circle-check"></i></div>
+                    <div><p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">FOUND ITEMS</p><p class="text-4xl font-black text-gray-800"><?= $total_found ?></p></div>
                 </div>
                 <div class="bg-white py-8 px-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-5 hover:shadow-md transition">
-                    <div class="w-14 h-14 rounded-full border-2 border-blue-100 text-blue-500 flex items-center justify-center text-2xl">
-                        <i class="fa-solid fa-check-double"></i>
-                    </div>
-                    <div>
-                        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">RESOLVED</p>
-                        <p class="text-4xl font-black text-gray-800"><?= $total_resolved ?></p>
-                    </div>
+                    <div class="w-14 h-14 rounded-full border-2 border-blue-100 text-blue-500 flex items-center justify-center text-2xl"><i class="fa-solid fa-check-double"></i></div>
+                    <div><p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">RESOLVED</p><p class="text-4xl font-black text-gray-800"><?= $total_resolved ?></p></div>
                 </div>
                 <div class="bg-white py-8 px-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-5 hover:shadow-md transition">
-                    <div class="w-14 h-14 rounded-full border-2 border-purple-100 text-purple-400 flex items-center justify-center text-2xl">
-                        <i class="fa-solid fa-cube"></i>
-                    </div>
-                    <div>
-                        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">TOTAL ITEMS</p>
-                        <p class="text-4xl font-black text-gray-800"><?= $total_all ?></p>
-                    </div>
+                    <div class="w-14 h-14 rounded-full border-2 border-purple-100 text-purple-400 flex items-center justify-center text-2xl"><i class="fa-solid fa-cube"></i></div>
+                    <div><p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">TOTAL ITEMS</p><p class="text-4xl font-black text-gray-800"><?= $total_all ?></p></div>
                 </div>
             </div>
 
-            <!-- Recent Reports Table -->
+            <!-- Recent Reports -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="font-bold text-gray-900 text-lg">Recent Reports</h3>
@@ -164,7 +150,7 @@ $reports = $pdo->query("
                 </div>
 
                 <?php if (empty($reports)): ?>
-                <div class="flex flex-col items-center justify-center py-12 text-center">
+                <div class="flex flex-col items-center py-12 text-center">
                     <i class="fa-solid fa-inbox text-4xl text-gray-200 mb-3"></i>
                     <p class="text-gray-400 font-bold">No reports yet.</p>
                 </div>
@@ -186,36 +172,18 @@ $reports = $pdo->query("
                                 $is_lost     = strtolower($r['type']) === 'lost';
                                 $is_resolved = strtolower($r['status']) === 'resolved';
                                 $type_color  = $is_lost ? 'bg-citred' : 'bg-green-500';
-                                $type_label  = strtoupper($r['type']);
-                                $status_color = $is_resolved
-                                    ? 'text-blue-600 bg-blue-100'
-                                    : 'text-yellow-600 bg-yellow-100';
-                                $status_label = $is_resolved ? 'RESOLVED' : 'PENDING';
+                                $status_color = $is_resolved ? 'text-blue-600 bg-blue-100' : 'text-yellow-600 bg-yellow-100';
                             ?>
                             <tr class="border-b border-gray-50 hover:bg-gray-50 transition">
                                 <td class="py-5 px-4">
                                     <p class="font-bold text-gray-800 text-sm"><?= htmlspecialchars($r['title']) ?></p>
                                     <p class="text-[10px] text-gray-400 mt-0.5">Rep. by <?= htmlspecialchars($r['reporter_name']) ?></p>
                                 </td>
-                                <td class="py-5 px-4">
-                                    <span class="text-[10px] font-bold px-3 py-1 rounded-full text-white <?= $type_color ?>">
-                                        <?= $type_label ?>
-                                    </span>
-                                </td>
-                                <td class="py-5 px-4 text-xs text-gray-600 uppercase font-semibold tracking-wide">
-                                    <?= htmlspecialchars($r['category']) ?>
-                                </td>
-                                <td class="py-5 px-4 text-xs text-gray-600">
-                                    <?= htmlspecialchars($r['location']) ?>
-                                </td>
-                                <td class="py-5 px-4 text-xs text-gray-600">
-                                    <?= date('n/j/Y', strtotime($r['created_at'])) ?>
-                                </td>
-                                <td class="py-5 px-4">
-                                    <span class="text-[10px] font-bold px-2.5 py-1 rounded <?= $status_color ?>">
-                                        <?= $status_label ?>
-                                    </span>
-                                </td>
+                                <td class="py-5 px-4"><span class="text-[10px] font-bold px-3 py-1 rounded-full text-white <?= $type_color ?>"><?= strtoupper($r['type']) ?></span></td>
+                                <td class="py-5 px-4 text-xs text-gray-600 uppercase font-semibold tracking-wide"><?= htmlspecialchars($r['category']) ?></td>
+                                <td class="py-5 px-4 text-xs text-gray-600"><?= htmlspecialchars($r['location']) ?></td>
+                                <td class="py-5 px-4 text-xs text-gray-600"><?= date('n/j/Y', strtotime($r['created_at'])) ?></td>
+                                <td class="py-5 px-4"><span class="text-[10px] font-bold px-2.5 py-1 rounded <?= $status_color ?>"><?= $is_resolved ? 'RESOLVED' : 'PENDING' ?></span></td>
                             </tr>
                             <?php endforeach; ?>
                         </tbody>
@@ -223,7 +191,6 @@ $reports = $pdo->query("
                 </div>
                 <?php endif; ?>
             </div>
-
         </main>
     </div>
 </div>
