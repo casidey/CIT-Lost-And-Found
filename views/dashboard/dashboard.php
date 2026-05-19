@@ -233,13 +233,13 @@ $just_reported = isset($_GET['reported']) && $_GET['reported'] == '1';
                     </div>
 
                     <div class="flex items-center gap-3 justify-end">
+                        <!-- REMOVED: onclick="return confirm('Decline this claim?')" -->
                         <a href="index.php?page=verification&action=decline&id=<?= (int)$vr['id'] ?>"
-                           onclick="return confirm('Decline this claim?')"
                            class="bg-white border border-red-200 text-red-500 hover:bg-red-50 font-bold text-sm px-6 py-2.5 rounded-lg flex items-center gap-2 transition-all shadow-sm">
                             <i class="fa-solid fa-xmark text-lg"></i> Decline
                         </a>
+                        <!-- REMOVED: onclick="return confirm('Approve this claim? ...')" -->
                         <a href="index.php?page=verification&action=approve&id=<?= (int)$vr['id'] ?>"
-                           onclick="return confirm('Approve this claim? <?= $answer_correct ? '' : 'WARNING: The answer does not match. Are you sure?' ?>')"
                            class="<?= $answer_correct ? 'bg-[#60A06D] hover:bg-[#4E885A]' : 'bg-gray-400 hover:bg-gray-500' ?> text-white font-bold text-sm px-6 py-2.5 rounded-lg flex items-center gap-2 transition-all shadow-sm">
                             <i class="fa-solid fa-check text-lg"></i> Approve
                         </a>
